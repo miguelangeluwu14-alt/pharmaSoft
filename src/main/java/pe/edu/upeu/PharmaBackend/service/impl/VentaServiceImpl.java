@@ -1,11 +1,14 @@
+
 package pe.edu.upeu.PharmaBackend.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import pe.edu.upeu.PharmaBackend.dto.DetalleVentaRequestDTO;
 import pe.edu.upeu.PharmaBackend.dto.PaginaResponseDTO;
 import pe.edu.upeu.PharmaBackend.dto.VentaRequestDTO;
@@ -29,6 +32,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
+
 @Service
 public class VentaServiceImpl implements VentaService {
 
@@ -36,10 +40,8 @@ public class VentaServiceImpl implements VentaService {
             LoggerFactory.getLogger(VentaServiceImpl.class);
 
     /*
-     * Lista blanca de campos por los que se permite ordenar la
-     * búsqueda. Cualquier otro valor se rechaza con 409 para no
-     * exponer la estructura interna de la entidad ni permitir
-     * ordenamientos arbitrarios.
+     * Lista blanca de campos por los que se permite ordenar
+     * la búsqueda. Los campos no permitidos se rechazan.
      */
     private static final Set<String> CAMPOS_ORDENABLES =
             Set.of("id", "fecha", "total", "estado");
@@ -65,22 +67,34 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true)
     public VentaResponseDTO registrar(VentaRequestDTO request) {
 
         long inicio = System.currentTimeMillis();
 
-        log.info("Inicio registrar venta | clienteId={} | items={}",
+        log.info(
+                "Inicio registrar venta | clienteId={} | items={}",
                 request.getClienteId(),
                 request.getDetalles() == null
                         ? 0
-                        : request.getDetalles().size());
+                        : request.getDetalles().size()
+        );
 
-        Cliente cliente = clienteRepository.findById(request.getClienteId())
-                        .orElseThrow(() ->new RecursoNoEncontradoException("Cliente no encontrado con id: "+ request.getClienteId()));
+        Cliente cliente = clienteRepository
+                .findById(request.getClienteId())
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Cliente no encontrado con id: "
+                                        + request.getClienteId()
+                        )
+                );
 
         if (!Boolean.TRUE.equals(cliente.getEstado())) {
-            throw new ReglaNegocioException("No se puede registrar una venta para un cliente inactivo");
+            throw new ReglaNegocioException(
+                    "No se puede registrar una venta para un cliente inactivo"
+            );
         }
+
         Venta venta = new Venta();
 
         venta.setCliente(cliente);
@@ -89,32 +103,52 @@ public class VentaServiceImpl implements VentaService {
 
         BigDecimal total = BigDecimal.ZERO;
 
-        for (DetalleVentaRequestDTO item: request.getDetalles()) {
-            Producto producto = productoRepository.findById(item.getProductoId()).orElseThrow(() ->
-                                    new RecursoNoEncontradoException("Producto no encontrado con id: "+ item.getProductoId()));
+        for (DetalleVentaRequestDTO item : request.getDetalles()) {
+
+            Producto producto = productoRepository
+                    .findById(item.getProductoId())
+                    .orElseThrow(() ->
+                            new RecursoNoEncontradoException(
+                                    "Producto no encontrado con id: "
+                                            + item.getProductoId()
+                            )
+                    );
 
             if (!Boolean.TRUE.equals(producto.getEstado())) {
-                throw new ReglaNegocioException("El producto "+ producto.getNombre()+ " se encuentra inactivo");
+                throw new ReglaNegocioException(
+                        "El producto "
+                                + producto.getNombre()
+                                + " se encuentra inactivo"
+                );
             }
 
             /*
-             * El descuento es un UPDATE condicional en la base (ver
-             * ProductoRepository.descontarStock): si devuelve 0 es que
-             * otra venta se llevó el stock entre la lectura y este
-             * punto, o simplemente no alcanzaba. La excepción revierte
-             * toda la transacción, incluidos los descuentos de los
-             * ítems anteriores.
+             * El descuento de stock se realiza mediante un
+             * UPDATE condicional en la base de datos.
+             *
+             * Si no hay stock suficiente, la excepción provoca
+             * la reversión de la transacción.
              */
             int filas = productoRepository.descontarStock(
-                    producto.getId(), item.getCantidad());
+                    producto.getId(),
+                    item.getCantidad()
+            );
 
             if (filas == 0) {
-
-                throw new ReglaNegocioException("Stock insuficiente para "+ producto.getNombre()+ ". Disponible: "+ producto.getStock()
-                                + ", solicitado: "+ item.getCantidad());
+                throw new ReglaNegocioException(
+                        "Stock insuficiente para "
+                                + producto.getNombre()
+                                + ". Disponible: "
+                                + producto.getStock()
+                                + ", solicitado: "
+                                + item.getCantidad()
+                );
             }
 
-            BigDecimal subtotal = producto.getPrecio().multiply(BigDecimal.valueOf(item.getCantidad()));
+            BigDecimal subtotal = producto.getPrecio()
+                    .multiply(
+                            BigDecimal.valueOf(item.getCantidad())
+                    );
 
             DetalleVenta detalle = new DetalleVenta();
 
@@ -130,14 +164,16 @@ public class VentaServiceImpl implements VentaService {
 
         venta.setTotal(total);
 
-        Venta guardada =ventaRepository.save(venta);
+        Venta guardada = ventaRepository.save(venta);
 
-        log.info("Fin registrar venta | ventaId={} | total={} | "
+        log.info(
+                "Fin registrar venta | ventaId={} | total={} | "
                         + "filas={} | duracionMs={}",
                 guardada.getId(),
                 guardada.getTotal(),
                 guardada.getDetalles().size(),
-                System.currentTimeMillis() - inicio);
+                System.currentTimeMillis() - inicio
+        );
 
         return ventaMapper.toResponse(guardada);
     }
@@ -147,13 +183,22 @@ public class VentaServiceImpl implements VentaService {
     public VentaResponseDTO buscar(Long id) {
 
         long inicio = System.currentTimeMillis();
+
         log.info("Inicio buscar venta por id | id={}", id);
 
-        Venta venta = ventaRepository.findById(id).orElseThrow(() ->
-                                new RecursoNoEncontradoException("Venta no encontrada con id: "+ id));
+        Venta venta = ventaRepository.findById(id)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Venta no encontrada con id: " + id
+                        )
+                );
 
-        log.info("Fin buscar venta por id | id={} | filas={} | duracionMs={}",
-                id, 1, System.currentTimeMillis() - inicio);
+        log.info(
+                "Fin buscar venta por id | id={} | filas={} | duracionMs={}",
+                id,
+                1,
+                System.currentTimeMillis() - inicio
+        );
 
         return ventaMapper.toResponse(venta);
     }
@@ -166,8 +211,16 @@ public class VentaServiceImpl implements VentaService {
             String ordenarPor,
             String direccion) {
 
-        return buscar(null, null, null, null,
-                pagina, tamanio, ordenarPor, direccion);
+        return buscar(
+                null,
+                null,
+                null,
+                null,
+                pagina,
+                tamanio,
+                ordenarPor,
+                direccion
+        );
     }
 
     @Override
@@ -184,11 +237,19 @@ public class VentaServiceImpl implements VentaService {
 
         long inicio = System.currentTimeMillis();
 
-        log.info("Inicio buscar ventas | clienteId={} | estado={} | "
+        log.info(
+                "Inicio buscar ventas | clienteId={} | estado={} | "
                         + "desde={} | hasta={} | pagina={} | tamanio={} | "
                         + "ordenarPor={} | direccion={}",
-                clienteId, estado, desde, hasta,
-                pagina, tamanio, ordenarPor, direccion);
+                clienteId,
+                estado,
+                desde,
+                hasta,
+                pagina,
+                tamanio,
+                ordenarPor,
+                direccion
+        );
 
         if (desde != null
                 && hasta != null
@@ -198,12 +259,19 @@ public class VentaServiceImpl implements VentaService {
                     "El rango de fechas es inválido: 'desde' ("
                             + desde
                             + ") es posterior a 'hasta' ("
-                            + hasta + ")");
+                            + hasta
+                            + ")"
+            );
         }
 
         Pageable pageable = PaginacionUtil.construir(
-                pagina, tamanio, ordenarPor, direccion,
-                CAMPOS_ORDENABLES, ORDEN_POR_DEFECTO);
+                pagina,
+                tamanio,
+                ordenarPor,
+                direccion,
+                CAMPOS_ORDENABLES,
+                ORDEN_POR_DEFECTO
+        );
 
         LocalDateTime desdeHora = (desde == null)
                 ? null
@@ -213,11 +281,18 @@ public class VentaServiceImpl implements VentaService {
                 ? null
                 : hasta.atTime(LocalTime.MAX);
 
-        Page<Venta> ventas = ventaRepository
-                .buscar(clienteId, estado, desdeHora, hastaHora, pageable);
+        Page<Venta> ventas = ventaRepository.buscar(
+                clienteId,
+                estado,
+                desdeHora,
+                hastaHora,
+                pageable
+        );
 
-        // Segunda consulta: detalles y productos de toda la página de
-        // una vez, en lugar de una consulta por venta al convertir.
+        /*
+         * Carga los detalles y productos de toda la página
+         * para evitar consultas repetidas por cada venta.
+         */
         if (ventas.hasContent()) {
             ventaRepository.cargarDetalles(ventas.getContent());
         }
@@ -225,13 +300,20 @@ public class VentaServiceImpl implements VentaService {
         Page<VentaResponseDTO> resultado =
                 ventas.map(ventaMapper::toResponse);
 
-        log.info("Fin buscar ventas | clienteId={} | estado={} | "
+        log.info(
+                "Fin buscar ventas | clienteId={} | estado={} | "
                         + "desde={} | hasta={} | orden={} {} | "
                         + "filas={} | total={} | duracionMs={}",
-                clienteId, estado, desde, hasta, ordenarPor, direccion,
+                clienteId,
+                estado,
+                desde,
+                hasta,
+                ordenarPor,
+                direccion,
                 resultado.getNumberOfElements(),
                 resultado.getTotalElements(),
-                System.currentTimeMillis() - inicio);
+                System.currentTimeMillis() - inicio
+        );
 
         return PaginaResponseDTO.de(resultado);
     }

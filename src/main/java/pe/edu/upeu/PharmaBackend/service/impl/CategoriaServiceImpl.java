@@ -1,11 +1,16 @@
-package pe.edu.upeu.PharmaBackend.service.impl;
 
+package pe.edu.upeu.PharmaBackend.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.List;
+
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import pe.edu.upeu.PharmaBackend.dto.CategoriaRequestDTO;
 import pe.edu.upeu.PharmaBackend.dto.CategoriaResponseDTO;
 import pe.edu.upeu.PharmaBackend.entity.Categoria;
@@ -15,7 +20,6 @@ import pe.edu.upeu.PharmaBackend.mapper.CategoriaMapper;
 import pe.edu.upeu.PharmaBackend.repository.CategoriaRepository;
 import pe.edu.upeu.PharmaBackend.repository.ProductoRepository;
 import pe.edu.upeu.PharmaBackend.service.service.CategoriaService;
-
 
 @Service
 public class CategoriaServiceImpl implements CategoriaService {
@@ -27,9 +31,11 @@ public class CategoriaServiceImpl implements CategoriaService {
     private final ProductoRepository productoRepository;
     private final CategoriaMapper categoriaMapper;
 
-    public CategoriaServiceImpl(CategoriaRepository categoriaRepository,
-                                ProductoRepository productoRepository,
-                                CategoriaMapper categoriaMapper) {
+    public CategoriaServiceImpl(
+            CategoriaRepository categoriaRepository,
+            ProductoRepository productoRepository,
+            CategoriaMapper categoriaMapper) {
+
         this.categoriaRepository = categoriaRepository;
         this.productoRepository = productoRepository;
         this.categoriaMapper = categoriaMapper;
@@ -37,11 +43,14 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "categorias", allEntries = true)
     public CategoriaResponseDTO crear(CategoriaRequestDTO request) {
-        String nombre = request.getNombre().trim();//"Carnes " != "Carnes"
-        if(categoriaRepository.existsByNombreIgnoreCase(nombre)){
+
+        String nombre = request.getNombre().trim();
+
+        if (categoriaRepository.existsByNombreIgnoreCase(nombre)) {
             throw new ReglaNegocioException(
-                    "Ya existe una categoria con el nomre "+ nombre
+                    "Ya existe una categoria con el nomre " + nombre
             );
         }
 
@@ -57,17 +66,26 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional
-    public CategoriaResponseDTO actualizar(Long id, CategoriaRequestDTO request) {
-        Categoria categoria = categoriaRepository.findById(id).orElseThrow(()->
-                new RecursoNoEncontradoException(
-                        "Categoria no encontrada con id: "+ id
-                )
-        );
+    @CacheEvict(
+            cacheNames = {"categorias", "productos"},
+            allEntries = true
+    )
+    public CategoriaResponseDTO actualizar(
+            Long id,
+            CategoriaRequestDTO request) {
+
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Categoria no encontrada con id: " + id
+                        )
+                );
 
         String nombre = request.getNombre().trim();
-        if(categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)){
+
+        if (categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
             throw new ReglaNegocioException(
-                    "Ya existe una categoria con el nomre "+ nombre
+                    "Ya existe una categoria con el nomre " + nombre
             );
         }
 
@@ -75,38 +93,48 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setDescripcion(request.getDescripcion());
         categoria.setEstado(request.getEstado());
 
-        Categoria catActualizada = categoriaRepository.saveAndFlush(categoria);
+        Categoria catActualizada =
+                categoriaRepository.saveAndFlush(categoria);
 
         return categoriaMapper.toResponse(catActualizada);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = "categorias",
+            key = "'id-' + #id"
+    )
     public CategoriaResponseDTO buscar(Long id) {
 
         log.info("Buscando categoria | id={}", id);
 
-        Categoria categoria =  categoriaRepository.findById(id)
-                .orElseThrow(()->
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() ->
                         new RecursoNoEncontradoException(
-                                "Categoria no encontrada con id: "+ id
+                                "Categoria no encontrada con id: " + id
                         )
                 );
+
         return categoriaMapper.toResponse(categoria);
     }
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "categorias", allEntries = true)
     public void eliminar(Long id) {
-        Categoria categoria = categoriaRepository.findById(id).orElseThrow(()->
-                new RecursoNoEncontradoException(
-                        "Categoria no encontrada con id: "+ id
-                )
-        );
 
-        if(productoRepository.existsByCategoriaId(id)){
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Categoria no encontrada con id: " + id
+                        )
+                );
+
+        if (productoRepository.existsByCategoriaId(id)) {
             throw new ReglaNegocioException(
-                    "No se puede eliminar la categoria "+ categoria.getNombre()
+                    "No se puede eliminar la categoria "
+                            + categoria.getNombre()
                             + " porque tiene productos asociados"
             );
         }
@@ -116,9 +144,14 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = "categorias",
+            key = "'todas'"
+    )
     public List<CategoriaResponseDTO> listar() {
 
         long inicio = System.currentTimeMillis();
+
         log.info("Inicio listar categorias");
 
         List<CategoriaResponseDTO> resultado =
@@ -127,9 +160,11 @@ public class CategoriaServiceImpl implements CategoriaService {
                         .map(categoriaMapper::toResponse)
                         .toList();
 
-        log.info("Fin listar categorias | filas={} | duracionMs={}",
+        log.info(
+                "Fin listar categorias | filas={} | duracionMs={}",
                 resultado.size(),
-                System.currentTimeMillis() - inicio);
+                System.currentTimeMillis() - inicio
+        );
 
         return resultado;
     }

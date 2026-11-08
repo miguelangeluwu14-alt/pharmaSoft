@@ -1,12 +1,16 @@
-package pe.edu.upeu.PharmaBackend.service.impl;
 
+package pe.edu.upeu.PharmaBackend.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import pe.edu.upeu.PharmaBackend.dto.PaginaResponseDTO;
 import pe.edu.upeu.PharmaBackend.dto.ProductoRequestDTO;
 import pe.edu.upeu.PharmaBackend.dto.ProductoResponseDTO;
@@ -21,7 +25,6 @@ import pe.edu.upeu.PharmaBackend.service.service.ProductoService;
 import pe.edu.upeu.PharmaBackend.util.PaginacionUtil;
 
 import java.util.Set;
-
 
 @Service
 public class ProductoServiceImpl implements ProductoService {
@@ -38,9 +41,11 @@ public class ProductoServiceImpl implements ProductoService {
     private final CategoriaRepository categoriaRepository;
     private final ProductoMapper productoMapper;
 
-    public ProductoServiceImpl(ProductoRepository productoRepository,
-                               CategoriaRepository categoriaRepository,
-                               ProductoMapper productoMapper) {
+    public ProductoServiceImpl(
+            ProductoRepository productoRepository,
+            CategoriaRepository categoriaRepository,
+            ProductoMapper productoMapper) {
+
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
         this.productoMapper = productoMapper;
@@ -48,11 +53,14 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true)
     public ProductoResponseDTO crear(ProductoRequestDTO request) {
+
         String nombre = request.getNombre().trim();
-        if(productoRepository.existsByNombreIgnoreCase(nombre)){
+
+        if (productoRepository.existsByNombreIgnoreCase(nombre)) {
             throw new ReglaNegocioException(
-                    "Ya existe un producto con el nombre "+ nombre
+                    "Ya existe un producto con el nombre " + nombre
             );
         }
 
@@ -72,17 +80,23 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional
-    public ProductoResponseDTO actualizar(Long id, ProductoRequestDTO request) {
-        Producto producto = productoRepository.findById(id).orElseThrow(()->
-                new RecursoNoEncontradoException(
-                        "Producto no encontrado con id: "+ id
-                )
-        );
+    @CacheEvict(cacheNames = "productos", allEntries = true)
+    public ProductoResponseDTO actualizar(
+            Long id,
+            ProductoRequestDTO request) {
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Producto no encontrado con id: " + id
+                        )
+                );
 
         String nombre = request.getNombre().trim();
-        if(productoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)){
+
+        if (productoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
             throw new ReglaNegocioException(
-                    "Ya existe un producto con el nombre "+ nombre
+                    "Ya existe un producto con el nombre " + nombre
             );
         }
 
@@ -94,55 +108,74 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setEstado(request.getEstado());
         producto.setCategoria(categoria);
 
-        Producto prodActualizado = productoRepository.saveAndFlush(producto);
+        Producto prodActualizado =
+                productoRepository.saveAndFlush(producto);
 
         return productoMapper.toResponse(prodActualizado);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = "productos",
+            key = "'id-' + #p0"
+    )
     public ProductoResponseDTO buscar(Long id) {
 
         log.info("Buscando producto | id={}", id);
 
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(()->
+                .orElseThrow(() ->
                         new RecursoNoEncontradoException(
-                                "Producto no encontrado con id: "+ id
+                                "Producto no encontrado con id: " + id
                         )
                 );
+
         return productoMapper.toResponse(producto);
     }
 
     /*
-     * Baja lógica: el producto queda referenciado desde el histórico de
-     * ventas (detalle_ventas.producto_id), así que nunca se borra
-     * físicamente. Con estado=false ya no puede venderse (ver
-     * VentaServiceImpl.registrar) y sigue apareciendo en reportes.
+     * Baja logica: el producto queda referenciado desde
+     * el historico de ventas.
+     *
+     * No se elimina fisicamente. Se establece estado=false
+     * para impedir nuevas ventas.
      */
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true)
     public void eliminar(Long id) {
-        Producto producto = productoRepository.findById(id).orElseThrow(()->
-                new RecursoNoEncontradoException(
-                        "Producto no encontrado con id: "+ id
-                )
-        );
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Producto no encontrado con id: " + id
+                        )
+                );
 
         if (!Boolean.TRUE.equals(producto.getEstado())) {
             throw new ReglaNegocioException(
-                    "El producto "+ producto.getNombre()+ " ya se encuentra inactivo"
+                    "El producto " + producto.getNombre()
+                            + " ya se encuentra inactivo"
             );
         }
 
         producto.setEstado(false);
         productoRepository.save(producto);
 
-        log.info("Producto dado de baja | id={} | nombre={}", id, producto.getNombre());
+        log.info(
+                "Producto dado de baja | id={} | nombre={}",
+                id,
+                producto.getNombre()
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = "productos",
+            key = "#p0 + '-' + #p1 + '-' + #p2 + '-' + #p3"
+    )
     public PaginaResponseDTO<ProductoResponseDTO> listar(
             int pagina,
             int tamanio,
@@ -150,31 +183,47 @@ public class ProductoServiceImpl implements ProductoService {
             String direccion) {
 
         long inicio = System.currentTimeMillis();
-        log.info("Inicio listar productos | pagina={} | tamanio={} | "
+
+        log.info(
+                "Inicio listar productos | pagina={} | tamanio={} | "
                         + "ordenarPor={} | direccion={}",
-                pagina, tamanio, ordenarPor, direccion);
+                pagina,
+                tamanio,
+                ordenarPor,
+                direccion
+        );
 
         Pageable pageable = PaginacionUtil.construir(
-                pagina, tamanio, ordenarPor, direccion,
-                CAMPOS_ORDENABLES, ORDEN_POR_DEFECTO);
+                pagina,
+                tamanio,
+                ordenarPor,
+                direccion,
+                CAMPOS_ORDENABLES,
+                ORDEN_POR_DEFECTO
+        );
 
         Page<ProductoResponseDTO> resultado =
                 productoRepository.findAll(pageable)
                         .map(productoMapper::toResponse);
 
-        log.info("Fin listar productos | filas={} | total={} | duracionMs={}",
+        log.info(
+                "Fin listar productos | filas={} | total={} | duracionMs={}",
                 resultado.getNumberOfElements(),
                 resultado.getTotalElements(),
-                System.currentTimeMillis() - inicio);
+                System.currentTimeMillis() - inicio
+        );
 
         return PaginaResponseDTO.de(resultado);
     }
 
-    private Categoria buscarCategoria(Long categoriaId){
-        return categoriaRepository.findById(categoriaId).orElseThrow(()->
-                new RecursoNoEncontradoException(
-                        "Categoria no encontrada con id: "+ categoriaId
-                )
-        );
+    private Categoria buscarCategoria(Long categoriaId) {
+
+        return categoriaRepository.findById(categoriaId)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Categoria no encontrada con id: "
+                                        + categoriaId
+                        )
+                );
     }
 }

@@ -1,3 +1,4 @@
+
 package pe.edu.upeu.PharmaBackend.config;
 
 import org.springframework.context.annotation.Bean;
@@ -51,7 +52,8 @@ public class SecurityConfig {
             UserDetailsService userDetailsService,
             CorsConfigurationSource corsConfigurationSource,
             RestAuthenticationEntryPoint authenticationEntryPoint,
-            RestAccessDeniedHandler accessDeniedHandler) throws Exception {
+            RestAccessDeniedHandler accessDeniedHandler
+    ) throws Exception {
 
         JwtAuthenticationFilter jwtFilter =
                 new JwtAuthenticationFilter(
@@ -77,7 +79,13 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // Rutas publicas
+                        // Actuator: solo health es publico
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/actuator/health"
+                        ).permitAll()
+
+                        // Rutas publicas existentes
                         .requestMatchers(
                                 RUTAS_PUBLICAS
                         ).permitAll()
@@ -87,7 +95,7 @@ public class SecurityConfig {
                                 "/**"
                         ).permitAll()
 
-                        // Catalogo
+                        // Catalogo: lectura
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/categorias/**",
@@ -97,6 +105,7 @@ public class SecurityConfig {
                                 CATALOGO_LEER.name()
                         )
 
+                        // Catalogo: escritura
                         .requestMatchers(
                                 "/api/v1/categorias/**",
                                 "/api/v1/productos/**"
@@ -105,7 +114,7 @@ public class SecurityConfig {
                                 CATALOGO_ESCRIBIR.name()
                         )
 
-                        // Clientes
+                        // Clientes: lectura
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/clientes/**"
@@ -114,6 +123,7 @@ public class SecurityConfig {
                                 CLIENTES_LEER.name()
                         )
 
+                        // Clientes: escritura
                         .requestMatchers(
                                 "/api/v1/clientes/**"
                         )
@@ -121,7 +131,7 @@ public class SecurityConfig {
                                 CLIENTES_ESCRIBIR.name()
                         )
 
-                        // Ventas
+                        // Ventas: registro
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/ventas"
@@ -130,6 +140,7 @@ public class SecurityConfig {
                                 VENTAS_REGISTRAR.name()
                         )
 
+                        // Ventas: lectura
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/ventas/**"
@@ -138,6 +149,7 @@ public class SecurityConfig {
                                 VENTAS_LEER.name()
                         )
 
+                        // Ventas: otras operaciones
                         .requestMatchers(
                                 "/api/v1/ventas/**"
                         )
@@ -155,7 +167,7 @@ public class SecurityConfig {
                                 USUARIOS_ADMINISTRAR.name()
                         )
 
-                        // Todo lo demas exige autenticacion
+                        // Las demas rutas requieren autenticacion
                         .anyRequest()
                         .authenticated()
                 )
@@ -185,10 +197,9 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration)
-            throws Exception {
+            AuthenticationConfiguration configuration
+    ) throws Exception {
 
-        return configuration
-                .getAuthenticationManager();
+        return configuration.getAuthenticationManager();
     }
 }

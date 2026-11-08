@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:oracle:thin:@//localhost:1522/FREEPDB1
     username: PHARMADB
-    password: 1234567
+    password: ${DB_PASSWORD}
 
   jpa:
     database-platform: org.hibernate.dialect.OracleDialect
@@ -57,5 +57,5 @@ app:
 
   # JWT en desarrollo. El secreto es una clave Base64.
   jwt:
-    secret: w9Z6dP/dzykNH/uiI3Z/KGjBlP0H4Ji+Tuq4fm2cTNuLD4jWafu1gBL74V2SJEvy
+    secret: ${JWT_SECRET}
     expiracion-minutos: 60

@@ -1,0 +1,35 @@
+
+services:
+  backend:
+    image: pharma-backend:local
+    container_name: pharma-backend
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8081:8080"
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      DB_URL: jdbc:oracle:thin:@//host.docker.internal:1522/FREEPDB1
+      DB_USERNAME: PHARMADB
+      DB_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
+
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en .env}
+      JWT_EXPIRACION_MINUTOS: "30"
+
+      FRONTEND_ORIGINS: "http://localhost:8082"
+
+      REDIS_HOST: host.docker.internal
+      REDIS_PORT: "6379"
+
+  frontend:
+    image: pharma-frontend:local
+    container_name: pharma-frontend
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8082:80"
+
+    depends_on:
+      - backend
