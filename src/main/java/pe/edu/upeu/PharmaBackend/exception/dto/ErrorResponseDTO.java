@@ -4,18 +4,39 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.slf4j.MDC;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 public class ErrorResponseDTO {
+
     private LocalDateTime timestamp;
     private int status;
     private String error;
     private String message;
     private String path;
     private Map<String, String> validationErrors;
+    private String requestId;
+
+    public ErrorResponseDTO(
+            LocalDateTime timestamp,
+            int status,
+            String error,
+            String message,
+            String path,
+            Map<String, String> validationErrors) {
+
+        this.timestamp = timestamp;
+        this.status = status;
+        this.error = error;
+        this.message = message;
+        this.path = path;
+        this.validationErrors = validationErrors;
+        this.requestId = MDC.get("requestId");
+    }
 }
