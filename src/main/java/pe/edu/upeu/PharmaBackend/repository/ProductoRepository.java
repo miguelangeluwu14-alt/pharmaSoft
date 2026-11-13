@@ -18,6 +18,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, long id);
 
     List<Producto> findByCategoriaId(Long categoriaId);
+    @EntityGraph(attributePaths = "categoria")
+    Page<Producto> findAllByCategoriaId(Long categoriaId, Pageable pageable);
     boolean existsByCategoriaId(Long categoriaId);
 
     /*

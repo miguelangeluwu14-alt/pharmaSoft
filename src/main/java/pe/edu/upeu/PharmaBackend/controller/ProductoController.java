@@ -36,10 +36,11 @@ public class ProductoController {
             String ordenarPor,
 
             @RequestParam(required = false, defaultValue = "asc")
-            String direccion) {
+            String direccion,
+            @RequestParam(required = false) Long categoriaId) {
 
         return ResponseEntity.ok(
-                productoService.listar(pagina, tamanio, ordenarPor, direccion)
+                productoService.listar(pagina, tamanio, ordenarPor, direccion, categoriaId)
         );
     }
 

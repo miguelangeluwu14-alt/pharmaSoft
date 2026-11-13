@@ -18,5 +18,6 @@ public interface ProductoService {
             int pagina,
             int tamanio,
             String ordenarPor,
-            String direccion);
+            String direccion,
+            Long categoriaId);
 }

@@ -106,6 +106,7 @@ public class ProductoServiceImpl implements ProductoService {
 
         Categoria categoria = buscarCategoria(request.getCategoriaId());
 
+        java.math.BigDecimal precioAnterior = producto.getPrecio();
         producto.setNombre(nombre);
         producto.setPrecio(request.getPrecio());
         producto.setStock(request.getStock());
@@ -115,6 +116,10 @@ public class ProductoServiceImpl implements ProductoService {
         Producto prodActualizado =
                 productoRepository.saveAndFlush(producto);
         auditoriaService.registrar("ACTUALIZAR", "PRODUCTOS", id, "Producto actualizado: " + nombre);
+        if (precioAnterior.compareTo(prodActualizado.getPrecio()) != 0) {
+            auditoriaService.registrar("PRECIO_MODIFICADO", "PRODUCTOS", id,
+                    precioAnterior + " -> " + prodActualizado.getPrecio());
+        }
 
         return productoMapper.toResponse(prodActualizado);
     }
@@ -186,7 +191,8 @@ public class ProductoServiceImpl implements ProductoService {
             int pagina,
             int tamanio,
             String ordenarPor,
-            String direccion) {
+            String direccion,
+            Long categoriaId) {
 
         long inicio = System.currentTimeMillis();
 
@@ -209,7 +215,8 @@ public class ProductoServiceImpl implements ProductoService {
         );
 
         Page<ProductoResponseDTO> resultado =
-                productoRepository.findAll(pageable)
+                (categoriaId == null ? productoRepository.findAll(pageable)
+                        : productoRepository.findAllByCategoriaId(categoriaId, pageable))
                         .map(productoMapper::toResponse);
 
         log.info(
