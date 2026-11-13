@@ -52,17 +52,20 @@ public class VentaServiceImpl implements VentaService {
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
     private final VentaMapper ventaMapper;
+    private final AuditoriaService auditoriaService;
 
     public VentaServiceImpl(
             VentaRepository ventaRepository,
             ClienteRepository clienteRepository,
             ProductoRepository productoRepository,
-            VentaMapper ventaMapper) {
+            VentaMapper ventaMapper,
+            AuditoriaService auditoriaService) {
 
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.productoRepository = productoRepository;
         this.ventaMapper = ventaMapper;
+        this.auditoriaService = auditoriaService;
     }
 
     @Override
@@ -165,6 +168,8 @@ public class VentaServiceImpl implements VentaService {
         venta.setTotal(total);
 
         Venta guardada = ventaRepository.save(venta);
+        auditoriaService.registrar("VENTA_REGISTRADA", "VENTAS", guardada.getId(),
+                "total=" + guardada.getTotal() + " | items=" + guardada.getDetalles().size());
 
         log.info(
                 "Fin registrar venta | ventaId={} | total={} | "
