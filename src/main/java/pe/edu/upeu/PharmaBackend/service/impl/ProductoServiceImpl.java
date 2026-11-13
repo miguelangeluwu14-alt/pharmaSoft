@@ -40,15 +40,18 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
     private final ProductoMapper productoMapper;
+    private final AuditoriaService auditoriaService;
 
     public ProductoServiceImpl(
             ProductoRepository productoRepository,
             CategoriaRepository categoriaRepository,
-            ProductoMapper productoMapper) {
+            ProductoMapper productoMapper,
+            AuditoriaService auditoriaService) {
 
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
         this.productoMapper = productoMapper;
+        this.auditoriaService = auditoriaService;
     }
 
     @Override
@@ -74,6 +77,7 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setCategoria(categoria);
 
         Producto prodCreado = productoRepository.save(producto);
+        auditoriaService.registrar("CREAR", "PRODUCTOS", prodCreado.getId(), "Producto creado: " + nombre);
 
         return productoMapper.toResponse(prodCreado);
     }
@@ -110,6 +114,7 @@ public class ProductoServiceImpl implements ProductoService {
 
         Producto prodActualizado =
                 productoRepository.saveAndFlush(producto);
+        auditoriaService.registrar("ACTUALIZAR", "PRODUCTOS", id, "Producto actualizado: " + nombre);
 
         return productoMapper.toResponse(prodActualizado);
     }
@@ -162,6 +167,7 @@ public class ProductoServiceImpl implements ProductoService {
 
         producto.setEstado(false);
         productoRepository.save(producto);
+        auditoriaService.registrar("DESACTIVAR", "PRODUCTOS", id, "Producto dado de baja: " + producto.getNombre());
 
         log.info(
                 "Producto dado de baja | id={} | nombre={}",

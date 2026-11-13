@@ -30,15 +30,18 @@ public class CategoriaServiceImpl implements CategoriaService {
     private final CategoriaRepository categoriaRepository;
     private final ProductoRepository productoRepository;
     private final CategoriaMapper categoriaMapper;
+    private final AuditoriaService auditoriaService;
 
     public CategoriaServiceImpl(
             CategoriaRepository categoriaRepository,
             ProductoRepository productoRepository,
-            CategoriaMapper categoriaMapper) {
+            CategoriaMapper categoriaMapper,
+            AuditoriaService auditoriaService) {
 
         this.categoriaRepository = categoriaRepository;
         this.productoRepository = productoRepository;
         this.categoriaMapper = categoriaMapper;
+        this.auditoriaService = auditoriaService;
     }
 
     @Override
@@ -60,6 +63,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setEstado(request.getEstado());
 
         Categoria catCreada = categoriaRepository.save(categoria);
+        auditoriaService.registrar("CREAR", "CATEGORIAS", catCreada.getId(), "Categoria creada: " + nombre);
 
         return categoriaMapper.toResponse(catCreada);
     }
@@ -95,6 +99,7 @@ public class CategoriaServiceImpl implements CategoriaService {
 
         Categoria catActualizada =
                 categoriaRepository.saveAndFlush(categoria);
+        auditoriaService.registrar("ACTUALIZAR", "CATEGORIAS", id, "Categoria actualizada: " + nombre);
 
         return categoriaMapper.toResponse(catActualizada);
     }
@@ -140,6 +145,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         }
 
         categoriaRepository.delete(categoria);
+        auditoriaService.registrar("ELIMINAR", "CATEGORIAS", id, "Categoria eliminada: " + categoria.getNombre());
     }
 
     @Override

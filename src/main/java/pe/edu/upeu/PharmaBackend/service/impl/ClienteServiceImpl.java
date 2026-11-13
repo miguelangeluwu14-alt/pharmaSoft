@@ -33,12 +33,15 @@ public class ClienteServiceImpl
 
     private final ClienteRepository clienteRepository;
     private final ClienteMapper clienteMapper;
+    private final AuditoriaService auditoriaService;
 
     public ClienteServiceImpl(
             ClienteRepository clienteRepository,
-            ClienteMapper clienteMapper) {
+            ClienteMapper clienteMapper,
+            AuditoriaService auditoriaService) {
         this.clienteRepository = clienteRepository;
         this.clienteMapper = clienteMapper;
+        this.auditoriaService = auditoriaService;
     }
 
     @Override
@@ -90,6 +93,7 @@ public class ClienteServiceImpl
 
         Cliente guardado =
                 clienteRepository.save(cliente);
+        auditoriaService.registrar("CREAR", "CLIENTES", guardado.getId(), "Cliente registrado");
 
         log.info(
                 "Cliente registrado correctamente id={}",
@@ -204,6 +208,7 @@ public class ClienteServiceImpl
 
         Cliente actualizado =
                 clienteRepository.save(cliente);
+        auditoriaService.registrar("ACTUALIZAR", "CLIENTES", id, "Cliente actualizado");
 
         log.info(
                 "Cliente id={} actualizado correctamente",
@@ -234,6 +239,7 @@ public class ClienteServiceImpl
 
         cliente.setEstado(false);
         clienteRepository.save(cliente);
+        auditoriaService.registrar("DESACTIVAR", "CLIENTES", id, "Cliente dado de baja");
 
         log.info(
                 "Cliente id={} dado de baja correctamente",
