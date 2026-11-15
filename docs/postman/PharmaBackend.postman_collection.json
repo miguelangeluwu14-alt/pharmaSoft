@@ -1,0 +1,594 @@
+{
+    "info":  {
+                 "_postman_id":  "6ec711be-3533-40ee-90e6-a561dcbc53fd",
+                 "name":  "PharmaSoft | S14 Autónoma - HTTP 200 400 401 403 404 409",
+                 "description":  "Colección de verificación para la Actividad Autónoma S14. 10 solicitudes, sin mutaciones válidas: lecturas y un POST intencionalmente inválido (HTTP 400). Primero configurar las variables adminPassword y vendedorPassword de manera local; después ejecutar la colección en orden con Collection Runner. No publicar esta colección con secretos o tokens guardados. Las respuestas efectivas deben comprobarse en tu entorno.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+                 "_exporter_id":  "58326042",
+                 "_collection_link":  "https://go.postman.co/collection/58326042-6ec711be-3533-40ee-90e6-a561dcbc53fd?source=collection_link"
+             },
+    "item":  [
+                 {
+                     "name":  "00 Login admin - guardar JWT",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"Login admin: HTTP 200\", function () {",
+                                                                   "    pm.response.to.have.status(200);",
+                                                                   "});",
+                                                                   "",
+                                                                   "const data = pm.response.json();\npm.test(\"Token JWT disponible\", function () { pm.expect(data.token).to.be.a(\"string\").and.not.empty; });\nif (pm.response.code === 200 \u0026\u0026 data.token) { pm.collectionVariables.set(\"adminToken\", data.token); }"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "noauth"
+                                              },
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\"username\": \"admin\", \"password\": \"{{adminPassword}}\"}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/auth/login",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "auth",
+                                                              "login"
+                                                          ]
+                                             },
+                                     "description":  "Inicio de sesión de admin. Usa la variable de colección adminPassword; el JWT queda en adminToken, solo en tu espacio local. No exportar tokens."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "01 Productos paginados - 200",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"01 Productos paginados - 200: HTTP 200\", function () {",
+                                                                   "    pm.response.to.have.status(200);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "bearer",
+                                                  "bearer":  [
+                                                                 {
+                                                                     "key":  "token",
+                                                                     "value":  "{{adminToken}}",
+                                                                     "type":  "string"
+                                                                 }
+                                                             ]
+                                              },
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/productos?pagina=0\u0026tamanio=20\u0026ordenarPor=nombre\u0026direccion=asc",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "productos"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "pagina",
+                                                                   "value":  "0"
+                                                               },
+                                                               {
+                                                                   "key":  "tamanio",
+                                                                   "value":  "20"
+                                                               },
+                                                               {
+                                                                   "key":  "ordenarPor",
+                                                                   "value":  "nombre"
+                                                               },
+                                                               {
+                                                                   "key":  "direccion",
+                                                                   "value":  "asc"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Verifica que el listado de productos responda correctamente."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "02 Ventas paginadas - 200",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"02 Ventas paginadas - 200: HTTP 200\", function () {",
+                                                                   "    pm.response.to.have.status(200);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "bearer",
+                                                  "bearer":  [
+                                                                 {
+                                                                     "key":  "token",
+                                                                     "value":  "{{adminToken}}",
+                                                                     "type":  "string"
+                                                                 }
+                                                             ]
+                                              },
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/ventas?pagina=0\u0026tamanio=10",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "ventas"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "pagina",
+                                                                   "value":  "0"
+                                                               },
+                                                               {
+                                                                   "key":  "tamanio",
+                                                                   "value":  "10"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Consulta de ventas sin crear nuevas operaciones ni descontar inventario."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "03 Auditoría admin - 200",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"03 Auditoría admin - 200: HTTP 200\", function () {",
+                                                                   "    pm.response.to.have.status(200);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "bearer",
+                                                  "bearer":  [
+                                                                 {
+                                                                     "key":  "token",
+                                                                     "value":  "{{adminToken}}",
+                                                                     "type":  "string"
+                                                                 }
+                                                             ]
+                                              },
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/auditoria?pagina=0\u0026tamanio=10",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "auditoria"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "pagina",
+                                                                   "value":  "0"
+                                                               },
+                                                               {
+                                                                   "key":  "tamanio",
+                                                                   "value":  "10"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Consulta protegida de bitácora con permiso USUARIOS_ADMINISTRAR."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "04 Productos tamaño excesivo - 409",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"04 Productos tamaño excesivo - 409: HTTP 409\", function () {",
+                                                                   "    pm.response.to.have.status(409);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "bearer",
+                                                  "bearer":  [
+                                                                 {
+                                                                     "key":  "token",
+                                                                     "value":  "{{adminToken}}",
+                                                                     "type":  "string"
+                                                                 }
+                                                             ]
+                                              },
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/productos?pagina=0\u0026tamanio=500",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "productos"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "pagina",
+                                                                   "value":  "0"
+                                                               },
+                                                               {
+                                                                   "key":  "tamanio",
+                                                                   "value":  "500"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Rechazo por tamaño fuera del rango permitido; observado en la práctica."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "05 Productos sin token - 401",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"05 Productos sin token - 401: HTTP 401\", function () {",
+                                                                   "    pm.response.to.have.status(401);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "noauth"
+                                              },
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/productos?pagina=0\u0026tamanio=20",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "productos"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "pagina",
+                                                                   "value":  "0"
+                                                               },
+                                                               {
+                                                                   "key":  "tamanio",
+                                                                   "value":  "20"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "No Auth explícito: comprueba acceso no autenticado. Si hay encabezado Authorization manual, elimínalo."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "06 Cliente inexistente - 404",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"06 Cliente inexistente - 404: HTTP 404\", function () {",
+                                                                   "    pm.response.to.have.status(404);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "bearer",
+                                                  "bearer":  [
+                                                                 {
+                                                                     "key":  "token",
+                                                                     "value":  "{{adminToken}}",
+                                                                     "type":  "string"
+                                                                 }
+                                                             ]
+                                              },
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/clientes/99999999",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "clientes",
+                                                              "99999999"
+                                                          ]
+                                             },
+                                     "description":  "Consulta un ID de cliente inverosímil, no modifica datos. Si existiera, sustituir por otro ID ausente."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "07 Cliente inválido - 400",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"07 Cliente inválido - 400: HTTP 400\", function () {",
+                                                                   "    pm.response.to.have.status(400);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "bearer",
+                                                  "bearer":  [
+                                                                 {
+                                                                     "key":  "token",
+                                                                     "value":  "{{adminToken}}",
+                                                                     "type":  "string"
+                                                                 }
+                                                             ]
+                                              },
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"dni\": \"123\",\n  \"nombres\": \"\",\n  \"apellidos\": \"\",\n  \"email\": \"no-es-correo\",\n  \"telefono\": \"123\",\n  \"direccion\": \"Prueba de validación\",\n  \"estado\": null\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/clientes",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "clientes"
+                                                          ]
+                                             },
+                                     "description":  "Datos deliberadamente inválidos para verificar Bean Validation. No crea registro si funciona correctamente."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "08 Login vendedor - guardar JWT",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"Login vendedor: HTTP 200\", function () {",
+                                                                   "    pm.response.to.have.status(200);",
+                                                                   "});",
+                                                                   "",
+                                                                   "const data = pm.response.json();\npm.test(\"Token JWT disponible\", function () { pm.expect(data.token).to.be.a(\"string\").and.not.empty; });\nif (pm.response.code === 200 \u0026\u0026 data.token) { pm.collectionVariables.set(\"vendedorToken\", data.token); }"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "noauth"
+                                              },
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\"username\": \"vendedor\", \"password\": \"{{vendedorPassword}}\"}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/auth/login",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "auth",
+                                                              "login"
+                                                          ]
+                                             },
+                                     "description":  "Inicio de sesión de vendedor. Usa la variable de colección vendedorPassword; el JWT queda en vendedorToken, solo en tu espacio local. No exportar tokens."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "09 Auditoría como vendedor - 403",
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\"09 Auditoría como vendedor - 403: HTTP 403\", function () {",
+                                                                   "    pm.response.to.have.status(403);",
+                                                                   "});"
+                                                               ]
+                                                  }
+                                   }
+                               ],
+                     "request":  {
+                                     "auth":  {
+                                                  "type":  "bearer",
+                                                  "bearer":  [
+                                                                 {
+                                                                     "key":  "token",
+                                                                     "value":  "{{vendedorToken}}",
+                                                                     "type":  "string"
+                                                                 }
+                                                             ]
+                                              },
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/v1/auditoria?pagina=0\u0026tamanio=10",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "v1",
+                                                              "auditoria"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "pagina",
+                                                                   "value":  "0"
+                                                               },
+                                                               {
+                                                                   "key":  "tamanio",
+                                                                   "value":  "10"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Comprueba restricción de permisos a un usuario autenticado sin USUARIOS_ADMINISTRAR."
+                                 },
+                     "response":  [
+
+                                  ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://localhost:8081"
+                     },
+                     {
+                         "key":  "adminPassword",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "vendedorPassword",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "adminToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "vendedorToken",
+                         "value":  ""
+                     }
+                 ]
+}
