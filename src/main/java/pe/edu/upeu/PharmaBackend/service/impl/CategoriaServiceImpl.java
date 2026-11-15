@@ -145,7 +145,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         }
 
         categoriaRepository.delete(categoria);
-        auditoriaService.registrar("ELIMINAR", "CATEGORIAS", id, "Categoria eliminada: " + categoria.getNombre());
+        auditoriaService.registrar("CATEGORIA_ELIMINADA", "CATEGORIAS", id, "Categoria eliminada: " + categoria.getNombre());
     }
 
     @Override

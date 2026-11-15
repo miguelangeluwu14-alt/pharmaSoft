@@ -93,7 +93,7 @@ public class ClienteServiceImpl
 
         Cliente guardado =
                 clienteRepository.save(cliente);
-        auditoriaService.registrar("CREAR", "CLIENTES", guardado.getId(), "Cliente registrado");
+        auditoriaService.registrar("CLIENTE_REGISTRADO", "CLIENTES", guardado.getId(), "Cliente registrado");
 
         log.info(
                 "Cliente registrado correctamente id={}",
